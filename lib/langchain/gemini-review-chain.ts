@@ -1,5 +1,4 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StructuredOutputParser } from '@langchain/core/output_parsers';
 import { z } from 'zod';
@@ -21,7 +20,6 @@ const reviewSchema = z.object({
 export class GeminiCodeReviewer {
     private detectionModel: ChatGoogleGenerativeAI;
     private reviewModel: ChatGoogleGenerativeAI;
-    private embeddings: GoogleGenerativeAIEmbeddings;
     private parser: StructuredOutputParser<typeof reviewSchema>;
     private context7: Context7Client;
 
@@ -38,12 +36,6 @@ export class GeminiCodeReviewer {
             model: 'gemini-3-flash-preview',
             temperature: 0.3,
             maxOutputTokens: 8192,
-            apiKey: process.env.GOOGLE_API_KEY,
-        });
-
-        // Initialize embeddings for semantic search
-        this.embeddings = new GoogleGenerativeAIEmbeddings({
-            modelName: 'text-embedding-004',
             apiKey: process.env.GOOGLE_API_KEY,
         });
 
@@ -197,96 +189,4 @@ If no issues are found, return an empty findings array.
         }
     }
 
-    async analyzeCodeChanges(
-        fileName: string,
-        oldCode: string,
-        newCode: string,
-        diff: string,
-        language: string
-    ) {
-        // 1. Detection Phase
-        const frameworks = await this.detectFrameworks(newCode, language);
-
-        // 2. Context7 Phase
-        const context7Docs = await this.fetchDocumentation(frameworks);
-
-        const prompt = PromptTemplate.fromTemplate(`
-You are an expert code reviewer with deep knowledge of {language} and software engineering best practices.
-You have access to the latest library documentation to ensure your suggestions use current APIs.
-
-Analyze the following code changes and provide detailed, actionable feedback.
-
-FILE: {fileName}
-LANGUAGE: {language}
-
-OLD CODE:
-\`\`\`{language}
-{oldCode}
-\`\`\`
-
-NEW CODE:
-\`\`\`{language}
-{newCode}
-\`\`\`
-
-DIFF:
-\`\`\`diff
-{diff}
-\`\`\`
-
-${context7Docs ? `
-RELEVANT LIBRARY DOCUMENTATION (from Context7):
-{libraryDocs}
-` : ''}
-
-Review criteria:
-1. **Bugs & Logic Errors**: Identify potential runtime errors, logic flaws, edge cases not handled
-2. **Security Vulnerabilities**: Check for SQL injection, XSS, authentication issues, data exposure
-3. **Performance Issues**: Look for inefficient algorithms, unnecessary computations, memory leaks
-4. **Code Quality**: Assess readability, maintainability, adherence to best practices
-5. **Style & Standards**: Check naming conventions, formatting, documentation
-6. **API Usage**: Verify correct usage of libraries and frameworks (use the documentation provided)
-
-For EACH issue found, provide:
-- severity: critical/major/minor/suggestion
-- category: bug/security/performance/style/best-practice
-- line: exact line number in the NEW code
-- message: concise description (1 sentence)
-- suggestion: specific code fix or improvement
-- explanation: detailed reasoning (2-3 sentences)
-
-Focus on the CHANGED lines, but consider surrounding context for logic errors.
-
-{formatInstructions}
-`);
-
-        try {
-            const chain = prompt.pipe(this.reviewModel);
-
-            const result = await chain.invoke({
-                fileName,
-                language,
-                oldCode: oldCode || 'N/A (new file)',
-                newCode,
-                diff,
-                libraryDocs: context7Docs || 'No additional documentation available.',
-                formatInstructions: this.parser.getFormatInstructions(),
-            });
-
-            const content = result.content as string;
-
-            // Parse the structured output
-            const parsed = (await this.parser.parse(content)) as { findings: any[] };
-
-            return parsed.findings;
-        } catch (error: any) {
-            console.error('Error analyzing code changes:', error);
-            throw new Error(`Failed to analyze ${fileName}: ${error.message}`);
-        }
-    }
-
-    async generateEmbedding(text: string): Promise<number[]> {
-        const result = await this.embeddings.embedQuery(text);
-        return result;
-    }
 }
