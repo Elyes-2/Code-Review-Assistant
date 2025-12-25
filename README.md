@@ -17,7 +17,6 @@ Standard Large Language Models (LLMs) like ChatGPT or Gemini are incredibly powe
   - **Stylish Finding Cards**: Every issue is presented in a sleek, glassmorphism-style card.
   - **Clear Severity Levels**: Instant visualization of `Critical`, `Major`, `Minor`, and `Suggestion` issues.
   - **Interactive Fixes**: Get precise code suggestions that you can copy and implement immediately.
-- **Standalone Mode**: Paste your code and get immediate results. No complicated setup required.
 
 ## 🛠️ Technologies
 
@@ -31,10 +30,8 @@ Standard Large Language Models (LLMs) like ChatGPT or Gemini are incredibly powe
 | **LLM Orchestration** | [LangChain](https://js.langchain.com/) |
 | **Documentation** | [Context7](https://context7.com/) for live library docs |
 | **State Management** | [TanStack Query](https://tanstack.com/query) (React Query) |
-| **UI Components** | [Radix UI](https://www.radix-ui.com/), [Lucide Icons](https://lucide.dev/) |
+| **UI Components** | [Lucide Icons](https://lucide.dev/) |
 | **Validation** | [Zod 4](https://zod.dev/) |
-| **Notifications** | [Sonner](https://sonner.emilkowal.ski/) |
-| **Code Diffs** | [diff2html](https://diff2html.xyz/) |
 
 ## 📋 Requirements
 
